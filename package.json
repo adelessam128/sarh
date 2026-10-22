@@ -1,0 +1,19 @@
+{
+  "name": "sarh-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build:server": "npm --prefix server run build",
+    "build:client": "npm --prefix client run build",
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "test:idempotency": "npm --prefix server run test:idempotency",
+    "seed": "npm --prefix server run seed",
+    "prisma:generate": "npm --prefix server run prisma:generate",
+    "prisma:migrate": "npm --prefix server run prisma:migrate",
+    "prisma:studio": "npm --prefix server run prisma:studio"
+  }
+}
