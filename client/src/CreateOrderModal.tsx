@@ -28,6 +28,7 @@ export function CreateOrderModal({ isOpen, token, onClose, onSuccess }: CreateOr
 
   // Ref to hold the frozen key across submission retries
   const currentSubmissionKeyRef = useRef<string | null>(null)
+  const isSubmittingRef = useRef<boolean>(false)
 
   // Reset form when modal opens
   useEffect(() => {
@@ -37,6 +38,7 @@ export function CreateOrderModal({ isOpen, token, onClose, onSuccess }: CreateOr
       setRetryStatus(null)
       setSubmitting(false)
       currentSubmissionKeyRef.current = null
+      isSubmittingRef.current = false
     }
   }, [isOpen])
 
@@ -94,6 +96,11 @@ export function CreateOrderModal({ isOpen, token, onClose, onSuccess }: CreateOr
    * 2. If it's a retry or re-click while in progress: uses the EXACT frozen key.
    */
   const handleCreateOrder = async (retryAttempt = 0) => {
+    // If a request is already in progress, ignore subsequent rapid clicks
+    if (isSubmittingRef.current && retryAttempt === 0) {
+      return
+    }
+
     setFormError(null)
 
     const validationError = validateForm()
@@ -104,13 +111,14 @@ export function CreateOrderModal({ isOpen, token, onClose, onSuccess }: CreateOr
 
     // Determine the key:
     // If not currently in a submission attempt, generate fresh UUIDv7 ON CLICK.
-    // If user re-clicks while in progress or auto-retrying, freeze and reuse the same key!
+    // If auto-retrying, freeze and reuse the same key!
     let keyToUse = currentSubmissionKeyRef.current
     if (!keyToUse) {
       keyToUse = uuidv7()
       currentSubmissionKeyRef.current = keyToUse
     }
 
+    isSubmittingRef.current = true
     setSubmitting(true)
 
     const payload = {
@@ -156,6 +164,7 @@ export function CreateOrderModal({ isOpen, token, onClose, onSuccess }: CreateOr
           onClose()
           setSuccessMsg(null)
           setSubmitting(false)
+          isSubmittingRef.current = false
         }, 1500)
         return
       }
@@ -178,14 +187,17 @@ export function CreateOrderModal({ isOpen, token, onClose, onSuccess }: CreateOr
       // 422 Unprocessable
       if (res.status === 422) {
         currentSubmissionKeyRef.current = null
+        isSubmittingRef.current = false
         throw new Error(`Validation Error: ${data.error}`)
       }
 
       currentSubmissionKeyRef.current = null
+      isSubmittingRef.current = false
       throw new Error(data.error || `HTTP ${res.status}`)
     } catch (err: unknown) {
       setFormError((err as Error).message)
       setRetryStatus(null)
+      isSubmittingRef.current = false
     } finally {
       if (!retryStatus) {
         setSubmitting(false)
